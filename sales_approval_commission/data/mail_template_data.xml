@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Simple Plain Email Template for Discount Approval Request -->
+        <record id="email_template_discount_approval_request" model="mail.template">
+            <field name="name">Sales: Discount Approval Request</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Discount Approval Required: {{ object.name }} ({{ '%.2f' % object.highest_discount }}% Discount) - {{ object.partner_id.name }}</field>
+            <field name="email_from">{{ (object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted) }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Sent to Sales Manager or Director when a quotation requires discount authorization</field>
+            <field name="body_html" type="html">
+<div style="font-family: sans-serif; font-size: 13px; line-height: 1.5;">
+    <p>Hello,</p>
+    <p>
+        Quotation <strong t-out="object.name or ''">S00001</strong> requires 
+        <strong t-if="object.approval_type == 'director'">Sales Director Approval</strong>
+        <strong t-else="">Sales Manager Approval</strong> 
+        before it can be confirmed.
+    </p>
+    <ul>
+        <li><strong>Customer:</strong> <span t-out="object.partner_id.name or ''"/></li>
+        <li><strong>Salesperson:</strong> <span t-out="object.user_id.name or ''"/></li>
+        <li><strong>Discount:</strong> <span t-out="'%.2f' % object.highest_discount"/>%</li>
+        <li><strong>Total Discount Amount:</strong> <span t-out="format_amount(object.total_discount_amount, object.currency_id) or ''"/></li>
+        <li><strong>Quotation Total:</strong> <span t-out="format_amount(object.amount_total, object.currency_id) or ''"/></li>
+    </ul>
+    <p style="margin-top: 15px;">
+        <a t-attf-href="/web#id={{ object.id }}&amp;model=sale.order&amp;view_type=form" style="font-weight: bold; text-decoration: underline;">
+            Click here to Review &amp; Approve Quotation <t t-out="object.name or ''"/>
+        </a>
+    </p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

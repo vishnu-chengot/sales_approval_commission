@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action for Quotations Awaiting Approval -->
+    <record id="action_quotations_awaiting_approval" model="ir.actions.act_window">
+        <field name="name">Quotations Awaiting Approval</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="domain">[('state', 'in', ('draft', 'sent')), ('approval_state', 'in', ('waiting_manager', 'waiting_director'))]</field>
+        <field name="context">{'search_default_group_by_approval_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No quotations currently awaiting discount approval.
+            </p>
+            <p>
+                Quotations requiring Sales Manager (> 5% to 10%) or Sales Director (> 10%) approval will appear here.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under Sales -> Orders: Quotations Awaiting Approval -->
+    <menuitem id="menu_sale_order_awaiting_approval"
+              name="Discount Approvals"
+              parent="sale.sale_order_menu"
+              action="action_quotations_awaiting_approval"
+              sequence="15"
+              groups="sales_team.group_sale_manager,sales_approval_commission.group_sale_director"/>
+
+    <!-- Menu Item under Sales -> Reporting: Monthly Sales Commissions -->
+    <menuitem id="menu_sale_monthly_commission"
+              name="Monthly Sales Commissions"
+              parent="sale.menu_sale_report"
+              action="action_sale_monthly_commission"
+              sequence="20"
+              groups="sales_team.group_sale_salesman"/>
+
+    <!-- Batch Compute Wizard Action Menu -->
+    <menuitem id="menu_sale_commission_batch_compute"
+              name="Compute Monthly Commissions"
+              parent="sale.menu_sale_report"
+              action="action_sale_commission_compute_wizard"
+              sequence="21"
+              groups="sales_team.group_sale_manager"/>
+
+    <!-- Action for Commissions Pivot Analysis -->
+    <record id="action_sale_monthly_commission_pivot_analysis" model="ir.actions.act_window">
+        <field name="name">Commissions Pivot Analysis</field>
+        <field name="res_model">sale.monthly.commission</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="context">{'search_default_group_by_salesperson': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No monthly sales commission records found.
+            </p>
+            <p>
+                Use the "Compute Monthly Commissions" action to calculate commissions for your sales team.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under Sales -> Reporting: Commissions Pivot Analysis -->
+    <menuitem id="menu_sale_monthly_commission_pivot"
+              name="Commissions Pivot Analysis"
+              parent="sale.menu_sale_report"
+              action="action_sale_monthly_commission_pivot_analysis"
+              sequence="22"
+              groups="sales_team.group_sale_salesman"/>
+</odoo>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_commission_compute_wizard_form" model="ir.ui.view">
+        <field name="name">sale.commission.compute.wizard.form</field>
+        <field name="model">sale.commission.compute.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Compute Monthly Sales Commissions">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Monthly Commission Batch Engine:</strong>
+                        <p class="mb-0">
+                            Calculates salesperson commissions based on monthly confirmed sales (in AED):
+                            <br/>• Under AED 30,000: <strong>0%</strong>
+                            <br/>• AED 30,000 – 59,999: <strong>5%</strong>
+                            <br/>• AED 60,000 and above: <strong>7.5%</strong>
+                        </p>
+                    </div>
+                    <group>
+                        <group string="Period Selection">
+                            <field name="month"/>
+                            <field name="year"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Salesperson Scope">
+                            <field name="compute_all_salespersons"/>
+                            <field name="salesperson_ids" widget="many2many_tags" invisible="compute_all_salespersons" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_batch_compute" string="Calculate Commissions" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sale_commission_compute_wizard" model="ir.actions.act_window">
+        <field name="name">Compute Monthly Commissions</field>
+        <field name="res_model">sale.commission.compute.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

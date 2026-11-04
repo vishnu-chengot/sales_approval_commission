@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Monthly Commission Tree / List View -->
+    <record id="view_sale_monthly_commission_tree" model="ir.ui.view">
+        <field name="name">sale.monthly.commission.tree</field>
+        <field name="model">sale.monthly.commission</field>
+        <field name="arch" type="xml">
+            <list string="Monthly Sales Commissions"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'calculated'"
+                  decoration-success="state in ('approved', 'paid')">
+                <field name="name"/>
+                <field name="salesperson_id" widget="many2one_avatar_user"/>
+                <field name="month"/>
+                <field name="year"/>
+                <field name="confirmed_order_count" string="Orders" sum="Total Orders"/>
+                <field name="total_confirmed_sales" string="Confirmed Sales (AED)" sum="Total Sales (AED)"/>
+                <field name="commission_rate" widget="percentage" string="Rate"/>
+                <field name="commission_amount" string="Commission (AED)" sum="Total Commission (AED)" class="fw-bold"/>
+                <field name="tier_applied" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'calculated'"
+                       decoration-success="state in ('approved', 'paid')"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Monthly Commission Form View -->
+    <record id="view_sale_monthly_commission_form" model="ir.ui.view">
+        <field name="name">sale.monthly.commission.form</field>
+        <field name="model">sale.monthly.commission</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Sales Commission">
+                <header>
+                    <button name="action_compute_commission"
+                            string="Calculate Commission"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state in ('approved', 'paid')"/>
+                    <button name="action_approve"
+                            string="Approve Commission"
+                            type="object"
+                            class="btn-success"
+                            invisible="state != 'calculated'"
+                            groups="sales_team.group_sale_manager"/>
+                    <button name="action_pay"
+                            string="Mark as Paid"
+                            type="object"
+                            class="btn-info"
+                            invisible="state != 'approved'"
+                            groups="sales_team.group_sale_manager"/>
+                    <button name="action_reset_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state not in ('calculated', 'cancelled')"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state in ('paid', 'cancelled')"
+                            groups="sales_team.group_sale_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,calculated,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_orders"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-shopping-cart"
+                                invisible="confirmed_order_count == 0">
+                            <field name="confirmed_order_count" widget="statinfo" string="Confirmed Orders"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <span class="o_form_label">Monthly Commission Sheet</span>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Period &amp; Salesperson">
+                            <field name="salesperson_id" options="{'no_create': True}" readonly="state in ('approved', 'paid')"/>
+                            <label for="month" string="Calculation Period"/>
+                            <div class="o_row">
+                                <field name="month" class="oe_inline" readonly="state in ('approved', 'paid')"/>
+                                <span> / </span>
+                                <field name="year" class="oe_inline" readonly="state in ('approved', 'paid')"/>
+                            </div>
+                            <field name="date_from" readonly="1"/>
+                            <field name="date_to" readonly="1"/>
+                        </group>
+                        <group string="Company &amp; Currency Standard">
+                            <field name="company_id" groups="base.group_multi_company" readonly="state in ('approved', 'paid')"/>
+                            <field name="currency_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="calculation_date" readonly="1" invisible="not calculation_date"/>
+                        </group>
+                    </group>
+
+                    <!-- KPI Cards for Management -->
+                    <div class="row mt-3 mb-3 text-center">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Confirmed Orders</div>
+                                <h3 class="mb-0 text-primary">
+                                    <field name="confirmed_order_count" readonly="1"/>
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Monthly Sales (AED)</div>
+                                <h3 class="mb-0 text-success">
+                                    <field name="total_confirmed_sales" readonly="1"/>
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Commission Rate</div>
+                                <h3 class="mb-0 text-info">
+                                    <field name="commission_rate" readonly="1"/>%
+                                </h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small text-uppercase fw-bold">Calculated Commission (AED)</div>
+                                <h3 class="mb-0 text-danger fw-bold">
+                                    <field name="commission_amount" readonly="1"/>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <group>
+                        <field name="tier_applied" readonly="1" widget="badge"
+                               decoration-info="tier_applied == 'tier_1'"
+                               decoration-warning="tier_applied == 'tier_2'"
+                               decoration-success="tier_applied == 'tier_3'"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Confirmed Sales Orders" name="confirmed_orders">
+                            <field name="order_line_ids" readonly="1">
+                                <list string="Orders Breakdown">
+                                    <field name="order_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="date_order"/>
+                                    <field name="order_amount_untaxed" string="Order Untaxed"/>
+                                    <field name="order_currency_id" optional="hide"/>
+                                    <field name="sales_amount_aed" string="Net Sales (AED)" sum="Total Sales (AED)"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Commission Policy &amp; Rules" name="commission_policy">
+                            <div class="p-3">
+                                <h5 class="fw-bold">Trading Company Commission Policy (AED Standard)</h5>
+                                <table class="table table-bordered table-striped mt-3" style="max-width: 650px;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sales Volume Tier</th>
+                                            <th>Monthly Confirmed Sales Range</th>
+                                            <th>Commission Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="table-secondary">
+                                            <td><strong>Tier 1</strong></td>
+                                            <td>Below AED 30,000</td>
+                                            <td><strong>0.0%</strong></td>
+                                        </tr>
+                                        <tr class="table-warning">
+                                            <td><strong>Tier 2</strong></td>
+                                            <td>AED 30,000 – AED 59,999.99</td>
+                                            <td><strong>5.0%</strong></td>
+                                        </tr>
+                                        <tr class="table-success">
+                                            <td><strong>Tier 3</strong></td>
+                                            <td>AED 60,000 and above</td>
+                                            <td><strong>7.5%</strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="text-muted small">
+                                    * Sales calculation is based strictly on confirmed sales orders within the calendar month.
+                                    Currency conversion to AED is performed using active exchange rates on the order date.
+                                </p>
+                            </div>
+                        </page>
+                        <page string="Internal Notes" name="internal_notes">
+                            <field name="notes" placeholder="Add administrative notes regarding this commission calculation..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Monthly Commission Pivot View -->
+    <record id="view_sale_monthly_commission_pivot" model="ir.ui.view">
+        <field name="name">sale.monthly.commission.pivot</field>
+        <field name="model">sale.monthly.commission</field>
+        <field name="arch" type="xml">
+            <pivot string="Monthly Commission Analysis">
+                <field name="salesperson_id" type="row"/>
+                <field name="year" type="col"/>
+                <field name="month" type="col"/>
+                <field name="total_confirmed_sales" type="measure"/>
+                <field name="commission_amount" type="measure"/>
+                <field name="confirmed_order_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Monthly Commission Graph View -->
+    <record id="view_sale_monthly_commission_graph" model="ir.ui.view">
+        <field name="name">sale.monthly.commission.graph</field>
+        <field name="model">sale.monthly.commission</field>
+        <field name="arch" type="xml">
+            <graph string="Monthly Sales &amp; Commissions" type="bar" sample="1">
+                <field name="salesperson_id"/>
+                <field name="total_confirmed_sales" type="measure"/>
+                <field name="commission_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Monthly Commission Search View -->
+    <record id="view_sale_monthly_commission_search" model="ir.ui.view">
+        <field name="name">sale.monthly.commission.search</field>
+        <field name="model">sale.monthly.commission</field>
+        <field name="arch" type="xml">
+            <search string="Search Monthly Commissions">
+                <field name="name"/>
+                <field name="salesperson_id"/>
+                <field name="year"/>
+                <field name="month"/>
+                <separator/>
+                <filter string="My Commissions" name="my_commissions" domain="[('salesperson_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Tier 3 (7.5%)" name="filter_tier3" domain="[('tier_applied', '=', 'tier_3')]"/>
+                <filter string="Tier 2 (5.0%)" name="filter_tier2" domain="[('tier_applied', '=', 'tier_2')]"/>
+                <filter string="Tier 1 (0.0%)" name="filter_tier1" domain="[('tier_applied', '=', 'tier_1')]"/>
+                <separator/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Calculated" name="filter_calculated" domain="[('state', '=', 'calculated')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Paid" name="filter_paid" domain="[('state', '=', 'paid')]"/>
+                <group>
+                    <filter string="Salesperson" name="group_by_salesperson" context="{'group_by': 'salesperson_id'}"/>
+                    <filter string="Year" name="group_by_year" context="{'group_by': 'year'}"/>
+                    <filter string="Month" name="group_by_month" context="{'group_by': 'month'}"/>
+                    <filter string="Tier" name="group_by_tier" context="{'group_by': 'tier_applied'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Monthly Commission Main Action -->
+    <record id="action_sale_monthly_commission" model="ir.actions.act_window">
+        <field name="name">Monthly Sales Commissions</field>
+        <field name="res_model">sale.monthly.commission</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_sale_monthly_commission_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No monthly sales commission records found.
+            </p>
+            <p>
+                Click "New" to calculate a commission sheet for a salesperson, or use "Compute Monthly Commissions" to batch calculate for your entire sales team.
+            </p>
+        </field>
+    </record>
+</odoo>

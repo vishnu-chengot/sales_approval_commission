@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_order_reject_wizard_form" model="ir.ui.view">
+        <field name="name">sale.order.reject.wizard.form</field>
+        <field name="model">sale.order.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Quotation Discount">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Notice:</strong> Rejecting this quotation will mark the discount as rejected. 
+                        The salesperson will be notified with your feedback to revise the quotation.
+                    </div>
+                    <group>
+                        <field name="order_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="rejection_reason" placeholder="Please specify why this discount cannot be approved..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_rejection" string="Confirm Rejection" type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

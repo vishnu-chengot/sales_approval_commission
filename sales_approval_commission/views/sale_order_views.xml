@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Sale Order Form View Inheritance -->
+    <record id="view_order_form_inherit_approval" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Header Buttons -->
+            <xpath expr="//header" position="inside">
+                <!-- Submit for Approval Button -->
+                <button name="action_submit_approval"
+                        string="Submit for Approval"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state not in ('draft', 'sent') or not requires_approval or approval_state in ('waiting_manager', 'waiting_director', 'approved')"/>
+
+                <!-- Manager / Director Approve Button -->
+                <button name="action_approve"
+                        string="Approve Discount"
+                        type="object"
+                        class="btn-success"
+                        invisible="state not in ('draft', 'sent') or approval_state not in ('waiting_manager', 'waiting_director')"
+                        groups="sales_team.group_sale_manager,sales_approval_commission.group_sale_director"/>
+
+                <!-- Reject Button -->
+                <button name="action_reject_dialog"
+                        string="Reject Discount"
+                        type="object"
+                        class="btn-danger"
+                        invisible="state not in ('draft', 'sent') or approval_state not in ('waiting_manager', 'waiting_director')"
+                        groups="sales_team.group_sale_manager,sales_approval_commission.group_sale_director"/>
+
+                <!-- Reset Approval Button -->
+                <button name="action_reset_to_draft_approval"
+                        string="Reset Approval"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="approval_state != 'rejected'"/>
+            </xpath>
+
+            <!-- Sheet Banners for Visual Clarity -->
+            <xpath expr="//sheet" position="before">
+                <field name="requires_approval" invisible="1"/>
+                <field name="highest_discount" invisible="1"/>
+
+                <div class="alert alert-warning mb-0" role="alert"
+                     invisible="approval_state != 'waiting_manager'">
+                    <strong>Approval Required:</strong> This quotation contains a discount of 
+                    <field name="highest_discount" readonly="1" class="d-inline fw-bold"/>% 
+                    and is awaiting <strong>Sales Manager Approval</strong> before it can be confirmed.
+                </div>
+
+                <div class="alert alert-danger mb-0" role="alert"
+                     invisible="approval_state != 'waiting_director'">
+                    <strong>Director Approval Required:</strong> This quotation contains a discount of 
+                    <field name="highest_discount" readonly="1" class="d-inline fw-bold"/>% 
+                    (exceeding 10%) and is awaiting <strong>Sales Director Approval</strong> before it can be confirmed.
+                </div>
+
+                <div class="alert alert-success mb-0" role="alert"
+                     invisible="approval_state != 'approved' or not requires_approval">
+                    <strong>Discount Approved:</strong> Authorized by 
+                    <field name="approved_by_id" readonly="1" class="d-inline fw-bold"/> on 
+                    <field name="approval_date" readonly="1" class="d-inline"/>. Quotation is ready for confirmation.
+                </div>
+
+                <div class="alert alert-danger mb-0" role="alert"
+                     invisible="approval_state != 'rejected'">
+                    <strong>Discount Rejected:</strong> 
+                    <field name="rejection_reason" readonly="1" class="d-inline"/>. 
+                    Please adjust line discounts and reset to draft.
+                </div>
+            </xpath>
+
+            <!-- Ensure Disc.% is ALWAYS visible on Order Lines without needing settings toggle -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='discount']" position="attributes">
+                <attribute name="groups"></attribute>
+                <attribute name="optional">show</attribute>
+            </xpath>
+
+            <!-- Quick Overall Discount Toolbar right under Order Lines -->
+            <xpath expr="//field[@name='order_line']" position="after">
+                <div class="d-flex align-items-center mt-2 mb-2 p-2 bg-light border rounded">
+                    <span class="fw-bold me-2"><i class="fa fa-percent me-1"/> Apply Overall Discount:</span>
+                    <field name="global_discount" class="oe_inline me-1" style="max-width: 100px;" readonly="state not in ('draft', 'sent')"/>
+                    <span class="me-3">%</span>
+                    <button name="action_apply_global_discount"
+                            string="Apply to All Lines"
+                            type="object"
+                            class="btn btn-sm btn-outline-primary"
+                            invisible="state not in ('draft', 'sent')"/>
+                    <span class="text-muted small ms-3">
+                        (Or enter discounts individually on each product row in the <strong>Disc.%</strong> column above)
+                    </span>
+                </div>
+            </xpath>
+
+            <!-- Discount Approval Page under Notebook -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Discount &amp; Approval" name="discount_approval_page">
+                    <div class="alert alert-info" role="alert">
+                        <div class="fw-bold mb-1">
+                            <i class="fa fa-info-circle me-1"/> How to Apply Discounts:
+                        </div>
+                        <ul class="mb-0 ps-3">
+                            <li><strong>Per-Line Discounts:</strong> Go to the <strong>Order Lines</strong> tab and enter discount percentages directly in the <strong>Disc.%</strong> column for each product.</li>
+                            <li><strong>Overall Quotation Discount:</strong> Or enter a discount percentage below and click <strong>Apply to All Lines</strong> to discount all products at once.</li>
+                            <li><strong>Approval Workflow:</strong> Discounts &gt; 5% require Sales Manager approval; discounts &gt; 10% require Sales Director approval. The metrics below are automatically calculated.</li>
+                        </ul>
+                    </div>
+
+                    <group>
+                        <group string="Quick Overall Discount">
+                            <label for="global_discount" string="Overall Discount (%)"/>
+                            <div class="o_row">
+                                <field name="global_discount" class="oe_inline" readonly="state not in ('draft', 'sent')"/>
+                                <span class="me-2">%</span>
+                                <button name="action_apply_global_discount"
+                                        string="Apply to All Lines"
+                                        type="object"
+                                        class="btn-sm btn-primary"
+                                        invisible="state not in ('draft', 'sent')"/>
+                            </div>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Discount Analysis (Calculated)">
+                            <field name="max_discount" readonly="1"/>
+                            <field name="effective_discount_rate" readonly="1"/>
+                            <field name="highest_discount" readonly="1" class="fw-bold text-primary"/>
+                            <field name="total_discount_amount" readonly="1"/>
+                            <field name="approval_type" readonly="1"/>
+                        </group>
+                        <group string="Approval Workflow Details">
+                            <field name="approval_state" readonly="1" widget="badge"
+                                   decoration-info="approval_state == 'draft'"
+                                   decoration-warning="approval_state == 'waiting_manager'"
+                                   decoration-danger="approval_state in ('waiting_director', 'rejected')"
+                                   decoration-success="approval_state == 'approved'"/>
+                            <field name="approved_by_id" readonly="1" invisible="not approved_by_id"/>
+                            <field name="approval_date" readonly="1" invisible="not approval_date"/>
+                            <field name="approved_discount" readonly="1" invisible="not approved_discount"/>
+                            <field name="rejection_reason" readonly="1" invisible="not rejection_reason"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sale Order Quotation Tree View Inheritance -->
+    <record id="view_quotation_tree_inherit_approval" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="highest_discount" string="Max Disc (%)" optional="show" widget="percentage"/>
+                <field name="approval_state" string="Approval" optional="show" widget="badge"
+                       decoration-info="approval_state == 'draft'"
+                       decoration-warning="approval_state == 'waiting_manager'"
+                       decoration-danger="approval_state in ('waiting_director', 'rejected')"
+                       decoration-success="approval_state == 'approved'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sale Order Search View Inheritance -->
+    <record id="view_sales_order_filter_inherit_approval" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter string="Requires Approval" name="filter_requires_approval"
+                        domain="[('requires_approval', '=', True)]"/>
+                <filter string="Awaiting Manager Approval" name="filter_waiting_manager"
+                        domain="[('approval_state', '=', 'waiting_manager')]"/>
+                <filter string="Awaiting Director Approval" name="filter_waiting_director"
+                        domain="[('approval_state', '=', 'waiting_director')]"/>
+                <filter string="Discount Approved" name="filter_approved"
+                        domain="[('approval_state', '=', 'approved'), ('requires_approval', '=', True)]"/>
+                <filter string="Discount Rejected" name="filter_rejected"
+                        domain="[('approval_state', '=', 'rejected')]"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Approval Status" name="group_by_approval_state"
+                        context="{'group_by': 'approval_state'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
